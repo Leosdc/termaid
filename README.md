@@ -19,7 +19,38 @@ Biblioteca TypeScript/ESM e CLI **zero-dependências** que interpreta diagramas 
   - Paletas `midnight`, `parchment`, `nord` e `plain` (sem ANSI), além de temas customizados.
   - Sanitização anti-ANSI-injection e limites estritos contra DoS/OOM.
 
-## 🚀 Desenvolvimento Local
+## 🚀 Uso Rápido
+
+### Via CLI
+
+```bash
+termaid diagram.mmd
+termaid README.md            # detecta blocos ```mermaid e renderiza junto no documento
+termaid diagram.mmd --theme nord
+cat README.md | termaid --plain
+```
+
+### Via API Programática (TypeScript / ESM)
+
+```ts
+import { renderMermaid } from 'termaid';
+
+const result = renderMermaid(`
+  flowchart TD
+    subgraph Auth[Autenticação]
+      Start([Início]) --> Check{Válido?}
+      Check -->|Sim| Dash[Dashboard]
+      Check -->|Não| Retry[Tentar Novamente]
+      Retry --> Check
+    end
+`, { theme: 'midnight' });
+
+if (result.ok) {
+  console.log(result.text);
+}
+```
+
+## 🛠️ Desenvolvimento Local
 
 ```bash
 npm install
