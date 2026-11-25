@@ -19,7 +19,7 @@ import {
 } from './renderers/markdownInline.js';
 import { resolveTheme, THEMES, type RgbColor, type TermaidTheme, type ThemeName } from './themes/palette.js';
 
-export const TERMAID_VERSION = '0.1.0';
+export const TERMAID_VERSION = '0.2.0';
 
 export {
   containsMermaidBlocks,
