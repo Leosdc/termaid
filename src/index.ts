@@ -10,12 +10,39 @@ import { computeSugiyamaLayout } from './layout/sugiyama.js';
 import { parseMermaid, type MermaidDiagramType, type MermaidParseResult } from './parser/mermaidParser.js';
 import { renderClassOrEr2D, renderSequence2D, renderState2D } from './renderers/diagrams.js';
 import { renderFlowchart2D } from './renderers/flowchart2d.js';
+import {
+  containsMermaidBlocks,
+  renderDocument,
+  renderMarkdownWithMermaid,
+  type RenderDocumentOptions,
+  type RenderDocumentResult,
+} from './renderers/markdownInline.js';
 import { resolveTheme, THEMES, type RgbColor, type TermaidTheme, type ThemeName } from './themes/palette.js';
 
 export const TERMAID_VERSION = '0.1.0';
 
-export { Grid2D, computeSugiyamaLayout, parseMermaid, resolveTheme, stripAnsi, stripUnsafeAnsi, THEMES, visibleLength };
-export type { MermaidDiagramType, MermaidParseResult, RgbColor, TermaidTheme, ThemeName };
+export {
+  containsMermaidBlocks,
+  Grid2D,
+  computeSugiyamaLayout,
+  parseMermaid,
+  renderDocument,
+  renderMarkdownWithMermaid,
+  resolveTheme,
+  stripAnsi,
+  stripUnsafeAnsi,
+  THEMES,
+  visibleLength,
+};
+export type {
+  MermaidDiagramType,
+  MermaidParseResult,
+  RenderDocumentOptions,
+  RenderDocumentResult,
+  RgbColor,
+  TermaidTheme,
+  ThemeName,
+};
 
 export interface RenderMermaidOptions {
   readonly theme?: ThemeName | TermaidTheme;

@@ -1,24 +1,27 @@
 #!/usr/bin/env node
 /**
- * Termaid CLI (SPEC-001)
+ * Termaid CLI (SPEC-001 & SPEC-002)
  * Uso:
  *   termaid diagram.mmd [--theme midnight|parchment|nord|plain] [--width 100]
- *   cat diagram.mmd | termaid --plain
+ *   termaid README.md   (detecta blocos ```mermaid e renderiza junto no documento)
+ *   cat README.md | termaid --plain
  */
 
 import fs from 'node:fs/promises';
-import { renderMermaid, TERMAID_VERSION, type ThemeName } from './index.js';
+import path from 'node:path';
+import { renderDocument, TERMAID_VERSION, type ThemeName } from './index.js';
 
 function printHelp(): void {
   console.log(`Termaid v${TERMAID_VERSION} — Motor 2D de diagramas Mermaid para terminal
 
 Uso:
-  termaid <arquivo.mmd> [opções]
-  cat arquivo.mmd | termaid [opções]
+  termaid <arquivo.mmd | arquivo.md> [opções]
+  cat arquivo.md | termaid [opções]
 
 Opções:
   -t, --theme <nome>   Tema: midnight (padrão), parchment, nord ou plain
       --plain          Atalho para --theme plain (Unicode puro sem ANSI)
+      --no-frame       Remove a moldura ao redor de diagramas embutidos em Markdown
   -w, --width <cols>   Largura máxima sugerida (padrão: colunas do terminal)
   -v, --version        Exibe a versão
   -h, --help           Exibe esta ajuda`);
@@ -37,6 +40,7 @@ async function main(): Promise<void> {
   let filePath: string | undefined;
   let theme: ThemeName = 'midnight';
   let maxWidth = process.stdout.columns || 100;
+  let frame = true;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i] ?? '';
@@ -50,6 +54,8 @@ async function main(): Promise<void> {
     }
     if (arg === '--plain') {
       theme = 'plain';
+    } else if (arg === '--no-frame') {
+      frame = false;
     } else if ((arg === '-t' || arg === '--theme') && args[i + 1]) {
       const val = args[++i] as ThemeName;
       if (val === 'midnight' || val === 'parchment' || val === 'nord' || val === 'plain') {
@@ -64,8 +70,11 @@ async function main(): Promise<void> {
   }
 
   let source = '';
+  let isMdExt = false;
   if (filePath) {
     source = await fs.readFile(filePath, 'utf8');
+    const ext = path.extname(filePath).toLowerCase();
+    isMdExt = ext === '.md' || ext === '.mdx' || ext === '.markdown';
   } else if (!process.stdin.isTTY) {
     source = await readStdin();
   } else {
@@ -73,7 +82,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const res = renderMermaid(source, { theme, maxWidth });
+  const res = renderDocument(source, { theme, maxWidth, frame, forceMarkdown: isMdExt });
   if (!res.ok) {
     console.error(`termaid: ${res.error ?? 'erro ao renderizar diagrama'}`);
     process.exitCode = 1;
