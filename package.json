@@ -1,5 +1,5 @@
 {
-  "name": "termaid",
+  "name": "@leosdc/termaid",
   "version": "0.2.0",
   "description": "Zero-dependency 2D Mermaid diagram layout engine and Unicode/ANSI terminal renderer (Sugiyama layering, crossing reduction, orthogonal edge routing, real subgraphs).",
   "type": "module",
