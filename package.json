@@ -1,0 +1,57 @@
+{
+  "name": "termaid",
+  "version": "0.1.0",
+  "description": "Zero-dependency 2D Mermaid diagram layout engine and Unicode/ANSI terminal renderer (Sugiyama layering, crossing reduction, orthogonal edge routing, real subgraphs).",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "termaid": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepare": "npm run build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test dist/test/*.test.js"
+  },
+  "keywords": [
+    "mermaid",
+    "terminal",
+    "tui",
+    "cli",
+    "ascii",
+    "unicode",
+    "sugiyama",
+    "graph-layout",
+    "flowchart",
+    "sequence-diagram"
+  ],
+  "author": "Leonardo da Cruz (@Leosdc)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Leosdc/termaid.git"
+  },
+  "homepage": "https://github.com/Leosdc/termaid#readme",
+  "bugs": {
+    "url": "https://github.com/Leosdc/termaid/issues"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.8.0"
+  }
+}
