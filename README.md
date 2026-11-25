@@ -24,6 +24,7 @@ Biblioteca TypeScript/ESM e CLI **zero-dependências** que interpreta diagramas 
 ### Via CLI
 
 ```bash
+npm install -g @leosdc/termaid
 termaid diagram.mmd
 termaid README.md            # detecta blocos ```mermaid e renderiza junto no documento
 termaid diagram.mmd --theme nord
@@ -33,7 +34,7 @@ cat README.md | termaid --plain
 ### Via API Programática (TypeScript / ESM)
 
 ```ts
-import { renderMermaid } from 'termaid';
+import { renderMermaid } from '@leosdc/termaid';
 
 const result = renderMermaid(`
   flowchart TD
