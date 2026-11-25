@@ -7,6 +7,15 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ---
 
+## [Unreleased / Dev]
+
+### Adicionado
+- **Motor 2D Sugiyama + Roteador Ortogonal + Canvas `Grid2D` (`core-engine`):**
+  - `Grid2D` com bitmask ortogonal (`UP|RIGHT|DOWN|LEFT`) para fusão automática de junções Unicode (`┌┐└┘├┤┬┴┼─│`).
+  - Layout 2D Sugiyama com detecção segura de ciclos, longest-path layering, redução de cruzamentos (4 passadas barycenter), coordenadas `(x, y)` reais e **subgraphs reais** envolvendo seus nós filhos.
+  - Roteador ortogonal 2D com portas distribuídas, bypass superior para arestas longas, back-edges laterais e rótulos sobre as arestas.
+  - Suporte completo a `flowchart`/`graph`, `stateDiagram-v2` (via Sugiyama 2D), `sequenceDiagram`, `classDiagram` e `erDiagram`, 4 temas (`midnight`, `parchment`, `nord`, `plain`), API pública (`renderMermaid`) e CLI (`termaid`) (#1).
+
 ## [0.1.0] - 2026-11-25
 
 ### Adicionado
