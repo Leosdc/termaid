@@ -10,6 +10,7 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 ## [Unreleased / Dev]
 
 ### Adicionado
+- **Renderização Inline de Mermaid em Documentos Markdown (`markdown-inline`):** detecção automática de blocos fenced ```` ```mermaid ```` / `~~~mermaid` em `renderDocument()`, `renderMarkdownWithMermaid()` e na CLI (`termaid README.md`), substituindo cada diagrama in-place pela versão 2D preservando texto e blocos de código comuns, com opção `--no-frame`, fallback seguro e sanitização anti-ANSI (#3).
 - **Motor 2D Sugiyama + Roteador Ortogonal + Canvas `Grid2D` (`core-engine`):**
   - `Grid2D` com bitmask ortogonal (`UP|RIGHT|DOWN|LEFT`) para fusão automática de junções Unicode (`┌┐└┘├┤┬┴┼─│`).
   - Layout 2D Sugiyama com detecção segura de ciclos, longest-path layering, redução de cruzamentos (4 passadas barycenter), coordenadas `(x, y)` reais e **subgraphs reais** envolvendo seus nós filhos.

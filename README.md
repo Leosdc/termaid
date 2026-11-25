@@ -25,8 +25,9 @@ Biblioteca TypeScript/ESM e CLI **zero-dependências** que interpreta diagramas 
 
 ```bash
 termaid diagram.mmd
+termaid README.md            # detecta blocos ```mermaid e renderiza junto no documento
 termaid diagram.mmd --theme nord
-cat diagram.mmd | termaid --plain
+cat README.md | termaid --plain
 ```
 
 ### Via API Programática (TypeScript / ESM)
