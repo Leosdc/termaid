@@ -111,4 +111,52 @@ describe('Termaid 2D Sugiyama + Orthogonal Router (SPEC-001)', () => {
     assert.equal(hugeRes.ok, false);
     assert.ok(hugeRes.error?.includes(String(MAX_MERMAID_LINES)));
   });
+
+  it('renderiza timeline com título, seções e múltiplos eventos por período', () => {
+    const src = [
+      'timeline',
+      '  title Entregas Recentes',
+      '  section Motor Core',
+      '    Novembro 2026 : PR #50 - Seletor de tema',
+      '                  : PR #52 - Espaços de magia',
+      '    Dezembro 2026 : PR #70 - Dados 3D',
+    ].join('\n');
+
+    const res = renderMermaid(src, { theme: 'plain', maxWidth: 80 });
+    assert.equal(res.ok, true);
+    assert.equal(res.type, 'timeline');
+    assert.equal(res.headerLabel, 'MERMAID · TIMELINE');
+    assert.ok(res.text.includes('Entregas Recentes'));
+    assert.ok(res.text.includes('Motor Core'));
+    assert.ok(res.text.includes('Novembro 2026'));
+    assert.ok(res.text.includes('PR #50 - Seletor de tema'));
+    assert.ok(res.text.includes('PR #52 - Espaços de magia'));
+    assert.ok(res.text.includes('Dezembro 2026'));
+    assert.ok(res.text.includes('◆'));
+  });
+
+  it('renderiza gitGraph com branches, commits, tags, merge e cherry-pick', () => {
+    const src = [
+      'gitGraph',
+      '  commit id: "init"',
+      '  branch dev',
+      '  checkout dev',
+      '  commit id: "feat-timeline" tag: "v0.3.0" type: HIGHLIGHT',
+      '  checkout main',
+      '  merge dev tag: "release"',
+      '  cherry-pick id: "hotfix"',
+    ].join('\n');
+
+    const res = renderMermaid(src, { theme: 'plain', maxWidth: 90 });
+    assert.equal(res.ok, true);
+    assert.equal(res.type, 'gitgraph');
+    assert.equal(res.headerLabel, 'MERMAID · GITGRAPH');
+    assert.ok(res.text.includes('● main') && res.text.includes('● dev'));
+    assert.ok(res.text.includes('init'));
+    assert.ok(res.text.includes('feat-timeline'));
+    assert.ok(res.text.includes('v0.3.0'));
+    assert.ok(res.text.includes('◎'), 'merge deve desenhar nó ◎');
+    assert.ok(res.text.includes('✦'), 'cherry-pick deve desenhar nó ✦');
+    assert.ok(res.text.includes('◆'), 'commit HIGHLIGHT deve desenhar nó ◆');
+  });
 });

@@ -8,7 +8,13 @@ import { stripAnsi, stripUnsafeAnsi, visibleLength } from './ansi/safety.js';
 import { Grid2D } from './canvas/grid2d.js';
 import { computeSugiyamaLayout } from './layout/sugiyama.js';
 import { parseMermaid, type MermaidDiagramType, type MermaidParseResult } from './parser/mermaidParser.js';
-import { renderClassOrEr2D, renderSequence2D, renderState2D } from './renderers/diagrams.js';
+import {
+  renderClassOrEr2D,
+  renderGitGraph2D,
+  renderSequence2D,
+  renderState2D,
+  renderTimeline2D,
+} from './renderers/diagrams.js';
 import { renderFlowchart2D } from './renderers/flowchart2d.js';
 import {
   containsMermaidBlocks,
@@ -19,7 +25,7 @@ import {
 } from './renderers/markdownInline.js';
 import { resolveTheme, THEMES, type RgbColor, type TermaidTheme, type ThemeName } from './themes/palette.js';
 
-export const TERMAID_VERSION = '0.2.0';
+export const TERMAID_VERSION = '0.3.0';
 
 export {
   containsMermaidBlocks,
@@ -96,6 +102,12 @@ export function renderMermaid(source: string, options: RenderMermaidOptions = {}
     case 'class':
     case 'er':
       lines = renderClassOrEr2D(parsed.ast, theme, options.maxWidth);
+      break;
+    case 'timeline':
+      lines = renderTimeline2D(parsed.ast, theme, options.maxWidth);
+      break;
+    case 'gitgraph':
+      lines = renderGitGraph2D(parsed.ast, theme, options.maxWidth);
       break;
   }
 

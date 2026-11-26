@@ -6,7 +6,7 @@ Biblioteca TypeScript/ESM e CLI **zero-dependências** que interpreta diagramas 
 
 ## ✨ Arquitetura Planejada
 
-- **Parser AST Mermaid:** `flowchart` / `graph` (`TD`, `TB`, `LR`, `RL`, `BT`), `sequenceDiagram`, `stateDiagram-v2`, `classDiagram` e `erDiagram`.
+- **Parser AST Mermaid:** `flowchart` / `graph` (`TD`, `TB`, `LR`, `RL`, `BT`), `sequenceDiagram`, `stateDiagram-v2`, `classDiagram`, `erDiagram`, `timeline` e `gitGraph`.
 - **Motor de Layout 2D (Sugiyama):**
   - Detecção e inversão segura de ciclos (sem loops infinitos) com back-edges roteadas pela lateral.
   - Atribuição de camadas (longest-path) e nós virtuais (*dummy nodes*) para arestas longas.

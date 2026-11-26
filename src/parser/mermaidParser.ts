@@ -17,6 +17,8 @@ export type MermaidDiagramType =
   | 'state'
   | 'class'
   | 'er'
+  | 'timeline'
+  | 'gitgraph'
   | 'unsupported';
 
 export type FlowchartDirection = 'TD' | 'TB' | 'LR' | 'RL' | 'BT';
@@ -123,11 +125,47 @@ export interface MermaidClassAst {
   readonly relations: MermaidRelation[];
 }
 
+export interface MermaidTimelinePeriod {
+  readonly period: string;
+  readonly events: string[];
+}
+
+export interface MermaidTimelineSection {
+  readonly title?: string;
+  readonly periods: MermaidTimelinePeriod[];
+}
+
+export interface MermaidTimelineAst {
+  readonly type: 'timeline';
+  readonly title?: string;
+  readonly sections: MermaidTimelineSection[];
+}
+
+export type GitCommitType = 'NORMAL' | 'REVERSE' | 'HIGHLIGHT';
+
+export interface MermaidGitEvent {
+  readonly kind: 'commit' | 'merge' | 'cherry-pick';
+  readonly branch: string;
+  readonly id: string;
+  readonly tag?: string;
+  readonly commitType: GitCommitType;
+  readonly sourceBranch?: string;
+  readonly parentBranch?: string;
+}
+
+export interface MermaidGitGraphAst {
+  readonly type: 'gitgraph';
+  readonly branches: string[];
+  readonly events: MermaidGitEvent[];
+}
+
 export type MermaidAst =
   | MermaidFlowchartAst
   | MermaidSequenceAst
   | MermaidStateAst
-  | MermaidClassAst;
+  | MermaidClassAst
+  | MermaidTimelineAst
+  | MermaidGitGraphAst;
 
 export interface MermaidParseResult {
   readonly ok: boolean;
@@ -561,6 +599,203 @@ function parseClassOrEr(lines: string[], kind: 'class' | 'er'): MermaidParseResu
   return { ok: true, type: kind, headerLabel, ast: { type: kind, entities, relations } };
 }
 
+function parseTimeline(lines: string[]): MermaidParseResult {
+  let title: string | undefined;
+  const sections: MermaidTimelineSection[] = [];
+  let currentSection: MermaidTimelineSection | null = null;
+  let currentPeriod: MermaidTimelinePeriod | null = null;
+  let totalEvents = 0;
+
+  const ensureSection = (): MermaidTimelineSection => {
+    if (!currentSection) {
+      currentSection = { periods: [] };
+      sections.push(currentSection);
+    }
+    return currentSection;
+  };
+
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i] ?? '';
+    if (/^accTitle\b|^accDescr\b/i.test(line)) continue;
+
+    const titleMatch = line.match(/^title\s+(.+)$/i);
+    if (titleMatch && titleMatch[1]) {
+      title = cleanLabel(titleMatch[1]);
+      continue;
+    }
+
+    const sectionMatch = line.match(/^section\s+(.+)$/i);
+    if (sectionMatch && sectionMatch[1]) {
+      currentSection = { title: cleanLabel(sectionMatch[1]), periods: [] };
+      sections.push(currentSection);
+      currentPeriod = null;
+      continue;
+    }
+
+    if (line.startsWith(':')) {
+      const extraEvents = line
+        .slice(1)
+        .split(/\s+:\s+/)
+        .map((e) => cleanLabel(e))
+        .filter(Boolean);
+      if (extraEvents.length > 0) {
+        const sec = ensureSection();
+        if (!currentPeriod) {
+          currentPeriod = { period: '•', events: [] };
+          sec.periods.push(currentPeriod);
+        }
+        for (const ev of extraEvents) {
+          if (totalEvents >= MAX_MERMAID_EDGES) break;
+          currentPeriod.events.push(ev);
+          totalEvents++;
+        }
+      }
+      continue;
+    }
+
+    const colonIdx = line.indexOf(':');
+    const sec = ensureSection();
+    if (colonIdx > 0) {
+      const periodName = cleanLabel(line.slice(0, colonIdx));
+      const rawEvents = line
+        .slice(colonIdx + 1)
+        .split(/\s+:\s+/)
+        .map((e) => cleanLabel(e))
+        .filter(Boolean);
+      currentPeriod = { period: periodName || '•', events: [] };
+      sec.periods.push(currentPeriod);
+      for (const ev of rawEvents) {
+        if (totalEvents >= MAX_MERMAID_EDGES) break;
+        currentPeriod.events.push(ev);
+        totalEvents++;
+      }
+    } else {
+      const periodName = cleanLabel(line);
+      if (periodName) {
+        currentPeriod = { period: periodName, events: [] };
+        sec.periods.push(currentPeriod);
+      }
+    }
+  }
+
+  const nonEmptySections = sections.filter((s) => s.periods.length > 0);
+  if (nonEmptySections.length === 0) {
+    return {
+      ok: false,
+      type: 'timeline',
+      headerLabel: 'MERMAID · TIMELINE',
+      error: 'Nenhum período ou evento encontrado na timeline.',
+    };
+  }
+
+  return {
+    ok: true,
+    type: 'timeline',
+    headerLabel: 'MERMAID · TIMELINE',
+    ast: { type: 'timeline', title, sections: nonEmptySections },
+  };
+}
+
+function extractGitAttr(stmt: string, attr: 'id' | 'tag'): string | undefined {
+  const m = stmt.match(new RegExp(`\\b${attr}\\s*:\\s*(?:"([^"]*)"|'([^']*)'|([^\\s]+))`, 'i'));
+  const raw = m?.[1] ?? m?.[2] ?? m?.[3];
+  return raw ? cleanLabel(raw) : undefined;
+}
+
+function extractGitType(stmt: string): GitCommitType {
+  const m = stmt.match(/\btype\s*:\s*(NORMAL|REVERSE|HIGHLIGHT)\b/i);
+  const upper = m?.[1]?.toUpperCase();
+  if (upper === 'REVERSE' || upper === 'HIGHLIGHT') return upper;
+  return 'NORMAL';
+}
+
+function parseGitGraph(lines: string[]): MermaidParseResult {
+  const branches: string[] = ['main'];
+  const events: MermaidGitEvent[] = [];
+  const pendingParentBranch = new Map<string, string>();
+  let currentBranch = 'main';
+  let seq = 1;
+
+  const ensureBranch = (name: string): string => {
+    const clean = cleanLabel(name);
+    if (clean && !branches.includes(clean) && branches.length < 16) {
+      branches.push(clean);
+    }
+    return clean || 'main';
+  };
+
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i] ?? '';
+    if (/^(accTitle|accDescr|options)\b/i.test(line)) continue;
+
+    const branchMatch = line.match(/^branch\s+(?:"([^"]+)"|'([^']+)'|([^\s]+))/i);
+    if (branchMatch) {
+      const name = ensureBranch(branchMatch[1] ?? branchMatch[2] ?? branchMatch[3] ?? '');
+      if (name !== currentBranch && !pendingParentBranch.has(name)) {
+        pendingParentBranch.set(name, currentBranch);
+      }
+      currentBranch = name;
+      continue;
+    }
+
+    const checkoutMatch = line.match(/^(?:checkout|switch)\s+(?:"([^"]+)"|'([^']+)'|([^\s]+))/i);
+    if (checkoutMatch) {
+      currentBranch = ensureBranch(checkoutMatch[1] ?? checkoutMatch[2] ?? checkoutMatch[3] ?? '');
+      continue;
+    }
+
+    if (/^commit\b/i.test(line)) {
+      if (events.length >= MAX_MERMAID_EDGES) continue;
+      const id = extractGitAttr(line, 'id') ?? `#${seq}`;
+      const tag = extractGitAttr(line, 'tag');
+      const commitType = extractGitType(line);
+      const parentBranch = pendingParentBranch.get(currentBranch);
+      if (parentBranch) pendingParentBranch.delete(currentBranch);
+      events.push({ kind: 'commit', branch: currentBranch, id, tag, commitType, parentBranch });
+      seq++;
+      continue;
+    }
+
+    const mergeMatch = line.match(/^merge\s+(?:"([^"]+)"|'([^']+)'|([^\s]+))/i);
+    if (mergeMatch) {
+      if (events.length >= MAX_MERMAID_EDGES) continue;
+      const sourceBranch = ensureBranch(mergeMatch[1] ?? mergeMatch[2] ?? mergeMatch[3] ?? '');
+      const id = extractGitAttr(line, 'id') ?? `merge ${sourceBranch}`;
+      const tag = extractGitAttr(line, 'tag');
+      const commitType = extractGitType(line);
+      events.push({ kind: 'merge', branch: currentBranch, id, tag, commitType, sourceBranch });
+      seq++;
+      continue;
+    }
+
+    if (/^cherry-pick\b/i.test(line)) {
+      if (events.length >= MAX_MERMAID_EDGES) continue;
+      const id = extractGitAttr(line, 'id') ?? `#${seq}`;
+      const tag = extractGitAttr(line, 'tag');
+      const parentBranch = pendingParentBranch.get(currentBranch);
+      if (parentBranch) pendingParentBranch.delete(currentBranch);
+      events.push({ kind: 'cherry-pick', branch: currentBranch, id, tag, commitType: 'NORMAL', parentBranch });
+      seq++;
+    }
+  }
+
+  if (events.length === 0) {
+    return {
+      ok: false,
+      type: 'gitgraph',
+      headerLabel: 'MERMAID · GITGRAPH',
+      error: 'Nenhum commit ou merge encontrado no gitGraph.',
+    };
+  }
+
+  return {
+    ok: true,
+    type: 'gitgraph',
+    headerLabel: 'MERMAID · GITGRAPH',
+    ast: { type: 'gitgraph', branches, events },
+  };
+}
+
 export function parseMermaid(source: string): MermaidParseResult {
   const safe = stripUnsafeAnsi(source).replace(/\r\n/g, '\n');
   const lines = safe
@@ -589,6 +824,8 @@ export function parseMermaid(source: string): MermaidParseResult {
   if (/^stateDiagram(?:-v2)?\b/i.test(first)) return parseState(lines);
   if (/^classDiagram\b/i.test(first)) return parseClassOrEr(lines, 'class');
   if (/^erDiagram\b/i.test(first)) return parseClassOrEr(lines, 'er');
+  if (/^timeline\b/i.test(first)) return parseTimeline(lines);
+  if (/^gitGraph\b/i.test(first)) return parseGitGraph(lines);
 
   const keyword = first.split(/\s+/)[0] ?? 'desconhecido';
   return {
